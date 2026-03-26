@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useToast } from '../components/Toast';
 import { formatCurrency } from '../utils/budget';
-import { Save, Download, Upload, Trash2 } from 'lucide-react';
+import { Save, Download, Upload, Trash2, Shield, BarChart3 } from 'lucide-react';
 
 export default function Settings() {
   const { state, dispatch } = useApp();
+  const toast = useToast();
   const [budgets, setBudgets] = useState(state.budgets);
   const [saved, setSaved] = useState(false);
 
@@ -14,6 +16,7 @@ export default function Settings() {
       payload: budgets.map((b) => ({ ...b, amount: parseFloat(b.amount) || 0 })),
     });
     setSaved(true);
+    toast('Orçamento salvo com sucesso!');
     setTimeout(() => setSaved(false), 2000);
   }
 
@@ -26,6 +29,7 @@ export default function Settings() {
     a.download = `feira-backup-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    toast('Backup exportado!');
   }
 
   function handleImport(e) {
@@ -36,13 +40,13 @@ export default function Settings() {
       try {
         const data = JSON.parse(ev.target.result);
         if (data.budgets) dispatch({ type: 'UPDATE_BUDGETS', payload: data.budgets });
-        // Reload the page to apply all data
         Object.entries(data).forEach(([key, value]) => {
           localStorage.setItem('feira_' + key, JSON.stringify(value));
         });
-        window.location.reload();
+        toast('Backup restaurado! Recarregando...', 'success');
+        setTimeout(() => window.location.reload(), 1000);
       } catch {
-        alert('Arquivo inválido');
+        toast('Arquivo inválido', 'error');
       }
     };
     reader.readAsText(file);
@@ -50,9 +54,7 @@ export default function Settings() {
 
   function handleClearAll() {
     if (
-      confirm(
-        'ATENÇÃO: Isso vai apagar TODOS os dados do aplicativo (estoque, receitas, histórico). Tem certeza?'
-      )
+      confirm('ATENÇÃO: Isso vai apagar TODOS os dados (estoque, receitas, histórico). Tem certeza?')
     ) {
       Object.keys(localStorage)
         .filter((k) => k.startsWith('feira_'))
@@ -64,6 +66,7 @@ export default function Settings() {
   return (
     <div className="page">
       <h1 className="page-title">Configurações</h1>
+      <p className="page-subtitle">Ajuste seu orçamento e gerencie seus dados</p>
 
       {/* Budget settings */}
       <div className="section">
@@ -103,21 +106,22 @@ export default function Settings() {
                   className="input"
                   min="1"
                   max="31"
+                  inputMode="numeric"
                 />
               </div>
             </div>
           </div>
         ))}
-        <button className="btn btn-primary" onClick={handleSave}>
+        <button className={`btn ${saved ? 'btn-success' : 'btn-primary'}`} onClick={handleSave}>
           <Save size={18} /> {saved ? 'Salvo!' : 'Salvar Orçamento'}
         </button>
       </div>
 
       {/* Data management */}
       <div className="section">
-        <h2 className="section-title">Dados</h2>
-        <p className="text-muted">
-          Faça backup dos seus dados ou restaure de um arquivo anterior.
+        <h2 className="section-title">Backup & Dados</h2>
+        <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '0.75rem' }}>
+          Exporte para compartilhar dados entre seu celular e o da sua esposa.
         </p>
         <div className="config-buttons">
           <button className="btn btn-outline" onClick={handleExport}>
@@ -133,7 +137,7 @@ export default function Settings() {
             />
           </label>
           <button className="btn btn-danger" onClick={handleClearAll}>
-            <Trash2 size={18} /> Apagar Tudo
+            <Trash2 size={18} /> Apagar Todos os Dados
           </button>
         </div>
       </div>
@@ -164,6 +168,10 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      <p className="text-muted" style={{ textAlign: 'center', fontSize: '0.72rem', marginTop: '1rem' }}>
+        Feira em Casa v1.0 — Feito com carinho
+      </p>
     </div>
   );
 }

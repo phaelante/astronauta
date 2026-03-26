@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Plus, Trash2, Edit3, X, Check, ChefHat, Star, Clock, Users } from 'lucide-react';
+import { useToast } from '../components/Toast';
+import { Plus, Trash2, Edit3, X, Check, ChefHat, Star, Clock, Users, ChevronRight } from 'lucide-react';
 
 const DIFFICULTY = [
   { value: 'facil', label: 'Fácil', color: 'green' },
@@ -12,6 +13,7 @@ const MEAL_TYPES = ['Café da manhã', 'Almoço', 'Jantar', 'Lanche', 'Sobremesa
 
 export default function Recipes() {
   const { state, dispatch } = useApp();
+  const toast = useToast();
   const { recipes, inventory } = state;
 
   const [showAdd, setShowAdd] = useState(false);
@@ -65,8 +67,10 @@ export default function Recipes() {
     if (editId) {
       dispatch({ type: 'UPDATE_RECIPE', payload: { ...payload, id: editId } });
       setEditId(null);
+      toast('Receita atualizada');
     } else {
       dispatch({ type: 'ADD_RECIPE', payload });
+      toast(`${form.name} adicionada!`);
     }
     resetForm();
     setShowAdd(false);

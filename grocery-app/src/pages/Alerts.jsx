@@ -1,4 +1,5 @@
 import { useApp } from '../context/AppContext';
+import { useToast } from '../components/Toast';
 import { CATEGORIES } from '../utils/categories';
 import { formatCurrency, getNextCreditDate, formatDate } from '../utils/budget';
 import {
@@ -13,6 +14,7 @@ import { Link } from 'react-router-dom';
 
 export default function Alerts() {
   const { state, dispatch } = useApp();
+  const toast = useToast();
   const { inventory, shoppingList, budgets, expenses } = state;
 
   // Items with low or zero stock
@@ -57,6 +59,7 @@ export default function Alerts() {
         type: 'ADD_TO_LIST',
         payload: { name: item.name, category: item.category },
       });
+      toast(`${item.name} adicionado à lista`);
     }
   }
 
