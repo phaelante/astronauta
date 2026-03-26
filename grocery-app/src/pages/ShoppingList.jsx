@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useToast } from '../components/Toast';
 import { CATEGORIES } from '../utils/categories';
-import { Plus, Trash2, Check, ShoppingCart } from 'lucide-react';
+import { Plus, Trash2, Check, ShoppingCart, Sparkles } from 'lucide-react';
 
 export default function ShoppingList() {
   const { state, dispatch } = useApp();
+  const toast = useToast();
   const { shoppingList, inventory } = state;
 
   const [name, setName] = useState('');
@@ -19,6 +21,7 @@ export default function ShoppingList() {
 
   function generateFromStock() {
     const lowItems = inventory.filter((i) => i.quantity <= i.minQuantity);
+    let added = 0;
     lowItems.forEach((item) => {
       const alreadyInList = shoppingList.some(
         (l) => l.name.toLowerCase() === item.name.toLowerCase()
@@ -28,16 +31,49 @@ export default function ShoppingList() {
           type: 'ADD_TO_LIST',
           payload: { name: item.name, category: item.category },
         });
+        added++;
       }
     });
+    if (added > 0) {
+      toast(`${added} itens adicionados do estoque baixo`, 'success');
+    } else {
+      toast('Nenhum item novo para adicionar', 'info');
+    }
   }
 
   const unchecked = shoppingList.filter((i) => !i.checked);
   const checked = shoppingList.filter((i) => i.checked);
+  const progress = shoppingList.length > 0
+    ? (checked.length / shoppingList.length) * 100
+    : 0;
 
   return (
     <div className="page">
-      <h1 className="page-title">Lista de Compras</h1>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Lista de Compras</h1>
+          {shoppingList.length > 0 && (
+            <p className="text-muted" style={{ fontSize: '0.8rem', marginTop: '0.15rem' }}>
+              {checked.length}/{shoppingList.length} concluídos
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      {shoppingList.length > 0 && (
+        <div className="budget-progress" style={{ marginBottom: '1.25rem', height: '6px' }}>
+          <div
+            className="budget-progress-fill"
+            style={{
+              width: `${progress}%`,
+              background: progress === 100
+                ? 'linear-gradient(90deg, var(--success), #6ee7b7)'
+                : undefined,
+            }}
+          />
+        </div>
+      )}
 
       <form onSubmit={handleAdd} className="add-form">
         <div className="form-row">
@@ -65,7 +101,7 @@ export default function ShoppingList() {
             <Plus size={18} /> Adicionar
           </button>
           <button type="button" className="btn btn-outline flex-1" onClick={generateFromStock}>
-            <ShoppingCart size={18} /> Gerar do Estoque
+            <Sparkles size={18} /> Auto-gerar
           </button>
         </div>
       </form>
@@ -100,7 +136,18 @@ export default function ShoppingList() {
 
       {checked.length > 0 && (
         <div className="section">
-          <h2 className="section-title text-muted">Concluídos ({checked.length})</h2>
+          <div className="section-header">
+            <h2 className="section-title" style={{ marginBottom: 0 }}>Concluídos ({checked.length})</h2>
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => {
+                checked.forEach((i) => dispatch({ type: 'REMOVE_FROM_LIST', payload: i.id }));
+                toast('Concluídos limpos', 'info');
+              }}
+            >
+              Limpar
+            </button>
+          </div>
           {checked.map((item) => {
             const cat = CATEGORIES.find((c) => c.id === item.category);
             return (
@@ -125,14 +172,6 @@ export default function ShoppingList() {
               </div>
             );
           })}
-          <button
-            className="btn btn-outline btn-sm"
-            onClick={() => {
-              checked.forEach((i) => dispatch({ type: 'REMOVE_FROM_LIST', payload: i.id }));
-            }}
-          >
-            Limpar concluídos
-          </button>
         </div>
       )}
 
@@ -140,7 +179,7 @@ export default function ShoppingList() {
         <div className="empty-state">
           <ShoppingCart size={48} />
           <p>Lista vazia</p>
-          <p className="text-muted">Adicione itens ou gere automaticamente do estoque baixo</p>
+          <p className="text-muted">Adicione itens ou clique "Auto-gerar" para criar a lista a partir do estoque baixo</p>
         </div>
       )}
     </div>
